@@ -1,45 +1,45 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Almoxarifado</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-gray-50 flex items-center justify-center">
-  <div class="bg-white p-8 rounded-2xl shadow w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-6 text-center">Entrar</h1>
-    <form id="loginForm" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">E-mail</label>
-        <input type="email" name="email" class="w-full border rounded-xl p-3" placeholder="email@exemplo.com" required />
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Senha</label>
-        <input type="password" name="password" class="w-full border rounded-xl p-3" placeholder="••••••••" required />
-      </div>
-      <button class="w-full py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Entrar</button>
-    </form>
-    <p id="msg" class="text-center text-sm text-red-600 mt-4"></p>
-  </div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área Restrita</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function verificarSenha() {
+            const usuario = document.getElementById('usuario').value;
+            const senha = document.getElementById('senha').value;
 
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = new FormData(e.target);
-      const payload = { email: form.get('email'), password: form.get('password') };
-      const r = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (r.ok) {
-        window.location.href = '/';
-      } else {
-        const data = await r.json();
-        document.getElementById('msg').textContent = data.error || 'Falha no login';
-      }
-    });
-  </script>
+            if(usuario === 'Admin' && senha === '1234') {
+                document.getElementById('login').classList.add('hidden');
+                document.getElementById('menu-restrito').classList.remove('hidden');
+            } else {
+                alert('Usuário ou senha incorretos!');
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <!-- Formulário de login -->
+    <div id="login" class="bg-white p-8 rounded-lg shadow-lg w-80">
+        <h2 class="text-2xl font-bold mb-6 text-center">Login Admin</h2>
+        <label class="block mb-2 font-medium">Usuário:</label>
+        <input type="text" id="usuario" placeholder="Digite o usuário" class="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+        
+        <label class="block mb-2 font-medium">Senha:</label>
+        <input type="password" id="senha" placeholder="Digite a senha" class="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+        
+        <button onclick="verificarSenha()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Entrar</button>
+    </div>
+
+    <!-- Menu escondido -->
+    <div id="menu-restrito" class="hidden bg-white p-8 rounded-lg shadow-lg w-80">
+        <h2 class="text-2xl font-bold mb-6 text-center">Menu de Cadastros</h2>
+        <ul class="space-y-3">
+            <li><a href="cadastro1.html" class="block bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded">Cadastro 1</a></li>
+            <li><a href="cadastro2.html" class="block bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded">Cadastro 2</a></li>
+            <li><a href="cadastro3.html" class="block bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded">Cadastro 3</a></li>
+        </ul>
+    </div>
 </body>
 </html>
