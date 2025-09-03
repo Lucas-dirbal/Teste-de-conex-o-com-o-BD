@@ -13,21 +13,22 @@ const db = new sqlite3.Database('./data.sqlite', (err) => {
   else console.log('Conectado ao banco SQLite.');
 });
 
-// Criar tabela users se não existir
-db.run(`CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  nome TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  senha TEXT NOT NULL,
-  cargo TEXT NOT NULL
-)`);
+// Criar tabela users se não existir e só depois inserir exemplos
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    senha TEXT NOT NULL,
+    cargo TEXT NOT NULL
+  )`);
 
-// Inserir usuários de exemplo
-const insertExamples = `INSERT OR IGNORE INTO users (nome, email, senha, cargo) VALUES
-  ('Aluno Teste', 'aluno@teste.com', '123', 'estudante'),
-  ('Admin Teste', 'admin@teste.com', '123', 'admin'),
-  ('Pedagógico Teste', 'pedagogico@teste.com', '123', 'pedagogica');`;
-db.run(insertExamples);
+  const insertExamples = `INSERT OR IGNORE INTO users (nome, email, senha, cargo) VALUES
+    ('Aluno Teste', 'aluno@teste.com', '123', 'estudante'),
+    ('Admin Teste', 'admin@teste.com', '123', 'admin'),
+    ('Pedagógico Teste', 'pedagogico@teste.com', '123', 'pedagogica');`;
+  db.run(insertExamples);
+});
 
 // Middlewares
 app.use(bodyParser.urlencoded({ extended: true }));
