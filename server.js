@@ -7,13 +7,13 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 
-// Configurar banco de dados
+// Configura banco
 const db = new sqlite3.Database('./data.sqlite', (err) => {
   if (err) console.error(err.message);
   else console.log('Conectado ao banco SQLite.');
 });
 
-// Criar tabela users se não existir e só depois inserir exemplos
+// Cria tabela se não existir
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,15 +22,10 @@ db.serialize(() => {
     senha TEXT NOT NULL,
     cargo TEXT NOT NULL
   )`);
-
-  const insertExamples = `INSERT OR IGNORE INTO users (nome, email, senha, cargo) VALUES
-    ('Aluno Teste', 'aluno@teste.com', '123', 'estudante'),
-    ('Admin Teste', 'admin@teste.com', '123', 'admin'),
-    ('Pedagógico Teste', 'pedagogico@teste.com', '123', 'pedagogica');`;
-  db.run(insertExamples);
 });
 
 // Middlewares
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
   secret: 'segredo',
@@ -38,34 +33,66 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// Servir arquivos estáticos
+// Servir arquivos estáticos (HTML)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota de login
+// ------------------ ROTAS DA API ------------------
+
+// Registro de novo usuário
+app.post('/register', (req, res) => {
+  const { nome, email, senha, cargo } = req.body;
+  if (!nome || !email || !senha || !cargo) {
+    return res.status(400).json({ error: 'Preencha todos os campos.' });
+  }
+
+  const sql = `INSERT INTO users (nome, email, senha, cargo) VALUES (?, ?, ?, ?)`;
+  db.run(sql, [nome, email, senha, cargo], function (err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ error: 'Erro ao cadastrar usuário.' });
+    }
+    res.status(201).json({ message: 'Usuário cadastrado com sucesso!', id: this.lastID });
+  });
+});
+
+// Login
 app.post('/login', (req, res) => {
   const { email, senha } = req.body;
   db.get('SELECT * FROM users WHERE email = ? AND senha = ?', [email, senha], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).send('Erro interno do servidor.');
-    }
-    if (!row) {
-      return res.send('<h1>Login inválido</h1><a href="/index.html">Voltar</a>');
-    }
+    if (err) return res.status(500).send('Erro interno.');
+    if (!row) return res.status(401).send('Credenciais inválidas.');
 
-    // Salva usuário na sessão
     req.session.user = row;
 
-    // Redireciona conforme cargo
-    if (row.cargo === 'estudante') {
-      return res.redirect('/estudante.html');
-    } else if (row.cargo === 'pedagogica') {
-      return res.redirect('/pedagogica.html');
-    } else if (row.cargo === 'admin') {
-      return res.redirect('/administracao.html');
-    } else {
-      return res.send('Cargo desconhecido.');
-    }
+    if (row.cargo === 'estudante') return res.redirect('/estudante.html');
+    if (row.cargo === 'pedagogica') return res.redirect('/pedagogica.html');
+    if (row.cargo === 'admin') return res.redirect('/administracao.html');
+    return res.send('Cargo desconhecido.');
+  });
+});
+
+// Listar usuários (apenas admin logado)
+app.get('/users', (req, res) => {
+  if (!req.session.user || req.session.user.cargo !== 'admin') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+
+  db.all('SELECT id, nome, email, cargo FROM users', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Erro ao buscar usuários' });
+    res.json(rows);
+  });
+});
+
+// Deletar usuário (apenas admin)
+app.delete('/users/:id', (req, res) => {
+  if (!req.session.user || req.session.user.cargo !== 'admin') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+
+  const sql = `DELETE FROM users WHERE id = ?`;
+  db.run(sql, [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: 'Erro ao excluir usuário' });
+    res.json({ message: 'Usuário excluído', changes: this.changes });
   });
 });
 
